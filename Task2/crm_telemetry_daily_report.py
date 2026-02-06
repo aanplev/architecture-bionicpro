@@ -1,43 +1,43 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
+from datetime import datetime, date
+import clickhouse_connect
 
-DEFAULT_ARGS = {
-    "owner": "bionicpro",
-    "retries": 1,
-    "retry_delay": timedelta(minutes=5),
-}
-
-def extract_crm():
-    pass
-
-def extract_telemetry():
-    pass
 
 def load_to_olap():
-    pass
+    client = clickhouse_connect.get_client(
+        host="clickhouse",
+        port=8123
+    )
+
+    client.command("""
+        CREATE TABLE IF NOT EXISTS report_mart (
+            user_id UInt64,
+            metric UInt32,
+            report_date Date
+        ) ENGINE = MergeTree()
+        ORDER BY user_id
+    """)
+
+    rows = [
+        (1, 100, date(2024, 1, 1)),
+        (2, 200, date(2024, 1, 1)),
+    ]
+
+    client.insert(
+        "report_mart",
+        rows,
+        column_names=["user_id", "metric", "report_date"]
+    )
+
 
 with DAG(
     dag_id="crm_telemetry_daily_report",
-    default_args=DEFAULT_ARGS,
     start_date=datetime(2024, 1, 1),
-    schedule_interval="0 3 * * *",
+    schedule_interval="@daily",
     catchup=False,
 ) as dag:
-
-    extract_crm_task = PythonOperator(
-        task_id="extract_crm",
-        python_callable=extract_crm,
+    PythonOperator(
+        task_id="load_to_clickhouse",
+        python_callable=load_to_olap
     )
-
-    extract_telemetry_task = PythonOperator(
-        task_id="extract_telemetry",
-        python_callable=extract_telemetry,
-    )
-
-    load_to_olap_task = PythonOperator(
-        task_id="load_to_olap",
-        python_callable=load_to_olap,
-    )
-
-    [extract_crm_task, extract_telemetry_task] >> load_to_olap_task
