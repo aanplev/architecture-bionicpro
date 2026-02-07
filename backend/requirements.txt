@@ -1,4 +1,6 @@
 fastapi
 uvicorn
-clickhouse-driver
-PyJWT
+clickhouse-connect
+requests
+PyJWT>=2.8.0
+cryptography

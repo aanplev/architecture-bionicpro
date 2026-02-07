@@ -12,16 +12,16 @@ def load_to_olap():
 
     client.command("""
         CREATE TABLE IF NOT EXISTS report_mart (
-            user_id UInt64,
+            user_id String,
             metric UInt32,
             report_date Date
-        ) ENGINE = MergeTree()
-        ORDER BY user_id
+        )
+        ENGINE = MergeTree
+        ORDER BY (user_id, report_date)
     """)
 
     rows = [
-        (1, 100, date(2024, 1, 1)),
-        (2, 200, date(2024, 1, 1)),
+        ("f7ec6988-8737-46da-8dd4-882ca94bb5e9", 100, date(2024, 1, 1)),
     ]
 
     client.insert(
